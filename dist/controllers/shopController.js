@@ -10,6 +10,7 @@ const http_errors_1 = __importDefault(require("http-errors"));
 const pdfkit_1 = __importDefault(require("pdfkit"));
 const lodash_1 = require("lodash");
 const stripe_1 = __importDefault(require("stripe"));
+const aws_s3_config_1 = require("../aws.s3.config");
 const stripe = new stripe_1.default(process.env.STRIPE_SECRET_API_KEY, {
     apiVersion: "2022-11-15",
 });
@@ -248,6 +249,20 @@ const renderCheckout = async (req, res, next) => {
         next((0, http_errors_1.default)(500, err));
     }
 };
+const fetchImage = async (req, res, next) => {
+    try {
+        const key = req.params.key;
+        const readStream = (0, aws_s3_config_1.downloadFromS3)(key);
+        readStream.on("error", (error) => {
+            res.redirect("/404");
+        });
+        res.contentType("image/jpeg");
+        readStream.pipe(res);
+    }
+    catch (err) {
+        next((0, http_errors_1.default)(500, err));
+    }
+};
 exports.default = {
     renderCart,
     renderProductList,
@@ -259,4 +274,5 @@ exports.default = {
     deleteFromCart,
     CheckoutSuccess,
     getInvoice,
+    fetchImage,
 };

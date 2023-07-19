@@ -19,6 +19,8 @@ import helmet from "helmet";
 import compression from "compression";
 import morgan from "morgan";
 import fs from "fs";
+import { v4 as uuidv4 } from "uuid";
+
 console.log(process.env.NODE_ENV);
 
 const MongoDBStoreSession = MongoDBStore(session);
@@ -39,6 +41,7 @@ app.use(
 			directives: {
 				"script-src": ["'self'", "https://js.stripe.com/v3/ 'unsafe-inline' "],
 				"default-src": ["'self'", "https://js.stripe.com/v3/"],
+				"script-src-attr": ["'self' 'unsafe-inline'"],
 			},
 		},
 	})
@@ -53,11 +56,8 @@ app.use(morgan("combined", { stream: accessLogStream }));
 app.use(express.json(), express.urlencoded({ extended: true })); //parse request body
 
 const fileStorage = multer.diskStorage({
-	destination: (req, file, cb) => {
-		cb(null, "images");
-	},
 	filename: (req, file, cb) => {
-		cb(null, file.originalname + "-" + Date.now() + path.extname(file.originalname));
+		cb(null, uuidv4() + "-" + Date.now() + path.extname(file.originalname));
 	},
 });
 const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
@@ -70,7 +70,6 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
 app.use(multer({ dest: "images", storage: fileStorage, fileFilter: fileFilter }).single("image")); //parse request body with multer
 
 app.use(express.static(path.join(rootDir, "public"))); //setup public static directory
-app.use("/images", express.static(path.join(rootDir, "../images"))); //setup public static directory
 
 app.set("view engine", "ejs"); //set the express app template engine
 

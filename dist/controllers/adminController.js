@@ -6,8 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongodb_1 = require("mongodb");
 const models_1 = require("../models");
 const express_validator_1 = require("express-validator");
-const file_1 = __importDefault(require("../utils/file"));
 const http_errors_1 = __importDefault(require("http-errors"));
+const aws_s3_config_1 = require("../aws.s3.config");
 const renderAdminProductList = async (req, res, next) => {
     try {
         const products = await models_1.Product.find({ userId: req.user?._id });
@@ -62,8 +62,8 @@ const renderAdminEditProduct = async (req, res, next) => {
 };
 const editProduct = async (req, res, next) => {
     const { productId, title, description, price } = req.body;
-    const image = req.file;
-    const imageUrl = image?.path;
+    const tempImage = req.file;
+    const imageUrl = tempImage?.path;
     try {
         const errors = (0, express_validator_1.validationResult)(req);
         if (!errors.isEmpty()) {
@@ -91,9 +91,11 @@ const editProduct = async (req, res, next) => {
         if (title) {
             updatedFields.title = title;
         }
-        if (image) {
-            file_1.default.deleteFile(foundProduct.imageUrl);
-            updatedFields.imageUrl = imageUrl;
+        if (tempImage) {
+            const key = foundProduct.imageUrl.replace("images/", "");
+            const result = await (0, aws_s3_config_1.deleteFromS3)(key);
+            const sendFile = await (0, aws_s3_config_1.uploadToS3)(tempImage);
+            updatedFields.imageUrl = "images/" + sendFile.Key;
         }
         if (description) {
             updatedFields.description = description;
@@ -114,10 +116,9 @@ const editProduct = async (req, res, next) => {
 };
 const createProduct = async (req, res, next) => {
     const { title, description, price } = req.body;
-    const image = req.file;
-    console.log(image);
+    const tempImage = req.file;
     try {
-        if (!image) {
+        if (!tempImage) {
             return res.status(422).render("admin/edit-product", {
                 pageTitle: "Admin Create Product",
                 path: "/admin/add-product",
@@ -150,9 +151,10 @@ const createProduct = async (req, res, next) => {
                 },
             });
         }
+        const sendFile = await (0, aws_s3_config_1.uploadToS3)(tempImage);
         const newProduct = new models_1.Product({
             title,
-            imageUrl: image.path,
+            imageUrl: "images/" + sendFile.Key,
             description: description,
             price: price,
             userId: req.user,
@@ -169,7 +171,8 @@ const deleteProduct = async (req, res, next) => {
     try {
         const deletedDoc = await models_1.Product.findOneAndDelete({ _id: productId, userId: req.user?.id });
         if (deletedDoc) {
-            file_1.default.deleteFile(deletedDoc.imageUrl);
+            const key = deletedDoc.imageUrl.replace("images/", "");
+            const result = await (0, aws_s3_config_1.deleteFromS3)(key);
         }
         res.status(200).json({
             message: "File deleted successfully",

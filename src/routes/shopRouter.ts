@@ -10,7 +10,7 @@ shopRouter.post("/cart", isAuthenticated, shopController.addToCart);
 shopRouter.get("/checkout", isAuthenticated, shopController.renderCheckout);
 shopRouter.get("/checkout/success", isAuthenticated, shopController.CheckoutSuccess);
 shopRouter.get("/checkout/cancel", isAuthenticated, shopController.renderCheckout);
-
+shopRouter.get("/images/:key", shopController.fetchImage);
 shopRouter.get("/orders", isAuthenticated, shopController.renderOrders);
 shopRouter.get("/products/:id", shopController.renderProductDetails);
 shopRouter.post("/cart-delete-item", isAuthenticated, shopController.deleteFromCart);

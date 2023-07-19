@@ -23,6 +23,7 @@ const helmet_1 = __importDefault(require("helmet"));
 const compression_1 = __importDefault(require("compression"));
 const morgan_1 = __importDefault(require("morgan"));
 const fs_1 = __importDefault(require("fs"));
+const uuid_1 = require("uuid");
 console.log(process.env.NODE_ENV);
 const MongoDBStoreSession = (0, connect_mongodb_session_1.default)(express_session_1.default);
 // const { doubleCsrfProtection, generateToken } = doubleCsrf({
@@ -39,6 +40,7 @@ app.use((0, helmet_1.default)({
         directives: {
             "script-src": ["'self'", "https://js.stripe.com/v3/ 'unsafe-inline' "],
             "default-src": ["'self'", "https://js.stripe.com/v3/"],
+            "script-src-attr": ["'self' 'unsafe-inline'"],
         },
     },
 })); //helmet configuration
@@ -49,11 +51,8 @@ app.use((0, compression_1.default)());
 app.use((0, morgan_1.default)("combined", { stream: accessLogStream }));
 app.use(express_1.default.json(), express_1.default.urlencoded({ extended: true })); //parse request body
 const fileStorage = multer_1.default.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, "images");
-    },
     filename: (req, file, cb) => {
-        cb(null, file.originalname + "-" + Date.now() + path_1.default.extname(file.originalname));
+        cb(null, (0, uuid_1.v4)() + "-" + Date.now() + path_1.default.extname(file.originalname));
     },
 });
 const fileFilter = (req, file, cb) => {
@@ -66,7 +65,6 @@ const fileFilter = (req, file, cb) => {
 };
 app.use((0, multer_1.default)({ dest: "images", storage: fileStorage, fileFilter: fileFilter }).single("image")); //parse request body with multer
 app.use(express_1.default.static(path_1.default.join(path_2.default, "public"))); //setup public static directory
-app.use("/images", express_1.default.static(path_1.default.join(path_2.default, "../images"))); //setup public static directory
 app.set("view engine", "ejs"); //set the express app template engine
 app.set("views", path_1.default.join(path_2.default, "views")); //set where the templates for the template engine are located
 //configure express sessions

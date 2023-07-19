@@ -2,8 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import { ObjectId } from "mongodb";
 import { Product } from "../models";
 import { validationResult } from "express-validator";
-import fileHelper from "../utils/file";
 import createError from "http-errors";
+import { deleteFromS3, s3, uploadToS3 } from "../aws.s3.config";
 
 const renderAdminProductList = async (req: Request, res: Response, next: NextFunction) => {
 	try {
@@ -58,8 +58,8 @@ const renderAdminEditProduct = async (req: Request, res: Response, next: NextFun
 
 const editProduct = async (req: Request, res: Response, next: NextFunction) => {
 	const { productId, title, description, price } = req.body;
-	const image = req.file;
-	const imageUrl = image?.path;
+	const tempImage = req.file;
+	const imageUrl = tempImage?.path;
 
 	try {
 		const errors = validationResult(req);
@@ -88,9 +88,11 @@ const editProduct = async (req: Request, res: Response, next: NextFunction) => {
 		if (title) {
 			updatedFields.title = title;
 		}
-		if (image) {
-			fileHelper.deleteFile(foundProduct.imageUrl);
-			updatedFields.imageUrl = imageUrl;
+		if (tempImage) {
+			const key = foundProduct.imageUrl.replace("images/", "");
+			const result = await deleteFromS3(key);
+			const sendFile = await uploadToS3(tempImage);
+			updatedFields.imageUrl = "images/" + sendFile.Key;
 		}
 		if (description) {
 			updatedFields.description = description;
@@ -111,11 +113,9 @@ const editProduct = async (req: Request, res: Response, next: NextFunction) => {
 
 const createProduct = async (req: Request, res: Response, next: NextFunction) => {
 	const { title, description, price } = req.body;
-	const image = req.file;
-	console.log(image);
-
+	const tempImage = req.file;
 	try {
-		if (!image) {
+		if (!tempImage) {
 			return res.status(422).render("admin/edit-product", {
 				pageTitle: "Admin Create Product",
 				path: "/admin/add-product",
@@ -148,10 +148,10 @@ const createProduct = async (req: Request, res: Response, next: NextFunction) =>
 				},
 			});
 		}
-
+		const sendFile = await uploadToS3(tempImage);
 		const newProduct = new Product({
 			title,
-			imageUrl: image.path,
+			imageUrl: "images/" + sendFile.Key,
 			description: description,
 			price: price,
 			userId: req.user,
@@ -168,7 +168,8 @@ const deleteProduct = async (req: Request, res: Response, next: NextFunction) =>
 	try {
 		const deletedDoc = await Product.findOneAndDelete({ _id: productId, userId: req.user?.id });
 		if (deletedDoc) {
-			fileHelper.deleteFile(deletedDoc.imageUrl);
+			const key = deletedDoc.imageUrl.replace("images/", "");
+			const result = await deleteFromS3(key);
 		}
 		res.status(200).json({
 			message: "File deleted successfully",

@@ -6,6 +6,7 @@ import createError, { UnknownError } from "http-errors";
 import PDFDocument, { page } from "pdfkit";
 import { toInteger } from "lodash";
 import Stripe from "stripe";
+import { downloadFromS3 } from "../aws.s3.config";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_API_KEY as string, {
 	apiVersion: "2022-11-15",
@@ -272,6 +273,20 @@ const renderCheckout = async (req: Request, res: Response, next: NextFunction) =
 	}
 };
 
+const fetchImage = async (req: Request, res: Response, next: NextFunction) => {
+	try {
+		const key = req.params.key;
+		const readStream = downloadFromS3(key);
+		readStream.on("error", (error: any) => {
+			res.redirect("/404");
+		});
+		res.contentType("image/jpeg");
+		readStream.pipe(res);
+	} catch (err) {
+		next(createError(500, err as UnknownError));
+	}
+};
+
 export default {
 	renderCart,
 	renderProductList,
@@ -283,4 +298,5 @@ export default {
 	deleteFromCart,
 	CheckoutSuccess,
 	getInvoice,
+	fetchImage,
 };

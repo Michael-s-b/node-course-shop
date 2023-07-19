@@ -14,6 +14,7 @@ shopRouter.post("/cart", isAuthenticated_1.default, controllers_1.shopController
 shopRouter.get("/checkout", isAuthenticated_1.default, controllers_1.shopController.renderCheckout);
 shopRouter.get("/checkout/success", isAuthenticated_1.default, controllers_1.shopController.CheckoutSuccess);
 shopRouter.get("/checkout/cancel", isAuthenticated_1.default, controllers_1.shopController.renderCheckout);
+shopRouter.get("/images/:key", controllers_1.shopController.fetchImage);
 shopRouter.get("/orders", isAuthenticated_1.default, controllers_1.shopController.renderOrders);
 shopRouter.get("/products/:id", controllers_1.shopController.renderProductDetails);
 shopRouter.post("/cart-delete-item", isAuthenticated_1.default, controllers_1.shopController.deleteFromCart);
