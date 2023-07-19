@@ -1,0 +1,10 @@
+node_modules
+.env
+classes.ts
+classes.js
+server.key
+server.cert
+images
+data
+.vscode
+access.log

@@ -1,0 +1,22 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const controllers_1 = require("../controllers");
+const isAuthenticated_1 = __importDefault(require("../middleware/isAuthenticated"));
+const shopRouter = (0, express_1.Router)();
+shopRouter.get("/", controllers_1.shopController.renderIndex);
+shopRouter.get("/products", controllers_1.shopController.renderProductList);
+shopRouter.get("/cart", isAuthenticated_1.default, controllers_1.shopController.renderCart);
+shopRouter.post("/cart", isAuthenticated_1.default, controllers_1.shopController.addToCart);
+shopRouter.get("/checkout", isAuthenticated_1.default, controllers_1.shopController.renderCheckout);
+shopRouter.get("/checkout/success", isAuthenticated_1.default, controllers_1.shopController.CheckoutSuccess);
+shopRouter.get("/checkout/cancel", isAuthenticated_1.default, controllers_1.shopController.renderCheckout);
+shopRouter.get("/orders", isAuthenticated_1.default, controllers_1.shopController.renderOrders);
+shopRouter.get("/products/:id", controllers_1.shopController.renderProductDetails);
+shopRouter.post("/cart-delete-item", isAuthenticated_1.default, controllers_1.shopController.deleteFromCart);
+shopRouter.get("/orders/:orderId", isAuthenticated_1.default, controllers_1.shopController.getInvoice);
+shopRouter.get("/checkout", isAuthenticated_1.default, controllers_1.shopController.renderCheckout);
+exports.default = shopRouter;
